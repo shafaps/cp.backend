@@ -1,22 +1,24 @@
 const express = require('express');
 const route = express.Router();
-const { createTeamMember, getTeamMemberById, updateTeamMember, deleteTeamMember, getAllTeamMembers } = require('../controllers/team.controller');
+const { createTeamMember, getTeamMemberById, updateTeamMember, deleteTeamMember,getAllTeamMembers } = require('../controllers/team.controller');
 const { authenticateToken } = require('../middleware/authenticateToken');
-const { upload } = require('../middleware/uploads'); // Import upload middleware
+const upload = require('../middleware/uploads'); // Middleware for handling file uploads
+const multerUpload = require('../middleware/multerUpload'); // Ensure this path is correct
+const teamController = require('../controllers/team.controller');
 
-// GET all team members
-route.get("/", getAllTeamMembers);
+// GET all projects
+route.get("/", teamController.getAllTeamMembers);
 
-// GET a single team member by ID
-route.get("/:id", getTeamMemberById);
+// GET a single project by ID
+route.get("/:id", teamController.getTeamMemberById);
 
-// POST request to create a new team member (authentication required)
-route.post("/", authenticateToken, upload, createTeamMember); // Apply upload middleware here
+// POST request to create a new project (authentication required)
+route.post("/", authenticateToken, multerUpload.single('image'), teamController.createTeamMember);
 
-// PUT request to update an existing team member (authentication required)
-route.put("/:id", authenticateToken, upload, updateTeamMember); // Apply upload middleware here
+// PUT request to update an existing project (authentication required)
+route.put("/:id", authenticateToken, multerUpload.single('image'), teamController.updateTeamMember);
 
-// DELETE request to delete a team member by ID (authentication required)
-route.delete("/:id", authenticateToken, deleteTeamMember);
+// DELETE request to delete a project by ID (authentication required)
+route.delete("/:id", authenticateToken, teamController.deleteTeamMember);
 
 module.exports = route;
