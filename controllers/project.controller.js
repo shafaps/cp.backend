@@ -1,14 +1,5 @@
 const { Project } = require('../models');
-const fs = require('fs');
-const path = require('path');
-
-const deleteFile = (filePath) => {
-    fs.unlink(filePath, (err) => {
-        if (err) {
-            console.error('Error deleting file:', err);
-        }
-    });
-};
+const imagekit = require('../utils/imagekit');
 
 module.exports = {
     // Create a new project
@@ -16,17 +7,22 @@ module.exports = {
         try {
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let imagePath = null;
+            let imageUrl = null;
 
             if (file) {
-                imagePath = file.path; // Path of the uploaded file
+                // Upload file to ImageKit
+                const uploadResponse = await imagekit.upload({
+                    file: file.buffer, // File buffer dari multer memory storage
+                    fileName: file.originalname,
+                });
+                imageUrl = uploadResponse.url; // URL dari file yang diunggah ke ImageKit
             }
 
             const newProject = await Project.create({
                 name,
                 description,
                 link_project,
-                imagePath
+                image: imageUrl // Menyimpan URL gambar dari ImageKit
             });
 
             res.status(201).json({
@@ -48,7 +44,7 @@ module.exports = {
             const { id } = req.params;
             const { name, description, link_project } = req.body;
             const file = req.file;
-            let newImagePath = null;
+            let newImageUrl = null;
 
             const project = await Project.findByPk(id);
             if (!project) {
@@ -58,19 +54,24 @@ module.exports = {
             }
 
             if (file) {
-                // Delete old image from file system
-                if (project.imagePath) {
-                    deleteFile(project.imagePath);
+                // Delete old image from ImageKit
+                if (project.image) {
+                    const fileId = project.image.split('/').pop(); // Assuming last part is the ImageKit file ID
+                    await imagekit.deleteFile(fileId);
                 }
 
-                // Save new image path
-                newImagePath = file.path;
+                // Upload new image to ImageKit
+                const uploadResponse = await imagekit.upload({
+                    file: file.buffer,
+                    fileName: file.originalname,
+                });
+                newImageUrl = uploadResponse.url; // URL dari file yang diunggah ke ImageKit
             }
 
             await project.update({
                 name,
                 description,
-                imagePath: newImagePath || project.imagePath,
+                image: newImageUrl || project.image,
                 link_project: link_project || project.link_project
             });
 
@@ -79,6 +80,7 @@ module.exports = {
                 data: project
             });
         } catch (error) {
+            console.error('Error updating project:', error);
             res.status(500).json({
                 message: "Error updating project",
                 error: error.message
@@ -135,9 +137,10 @@ module.exports = {
                 });
             }
 
-            // Delete image from file system
-            if (project.imagePath) {
-                deleteFile(project.imagePath);
+            // Delete image from ImageKit
+            if (project.image) {
+                const fileId = project.image.split('/').pop(); // Assuming last part is the ImageKit file ID
+                await imagekit.deleteFile(fileId);
             }
 
             await project.destroy();
