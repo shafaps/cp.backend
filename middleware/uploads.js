@@ -1,6 +1,8 @@
-const ImageKit = require('imagekit');
-const fs = require('fs');
+// middleware/uploadMiddleware.js
+const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const ImageKit = require('imagekit');
 
 // Initialize ImageKit
 const imageKit = new ImageKit({
@@ -9,21 +11,32 @@ const imageKit = new ImageKit({
   urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
 });
 
-// Middleware for handling file uploads
-const upload = async (req, res, next) => {
+// Set up Multer storage
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Ensure this directory is writable
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+
+// Initialize Multer
+const upload = multer({ storage: storage });
+
+// Middleware for uploading file to ImageKit
+const uploadToImageKit = async (req, res, next) => {
   if (!req.file) {
     return next();
   }
 
   try {
-    // Upload file to ImageKit
     const filePath = req.file.path;
     const result = await imageKit.upload({
       file: fs.readFileSync(filePath),
       fileName: req.file.originalname
     });
 
-    // Add the uploaded image URL to request object
     req.imageUrl = result.url;
 
     // Clean up local file after upload
@@ -50,5 +63,6 @@ const deleteImage = async (fileId) => {
 
 module.exports = {
   upload,
+  uploadToImageKit,
   deleteImage
 };
