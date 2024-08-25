@@ -1,24 +1,23 @@
+// routes/project.route.js
 const express = require('express');
 const route = express.Router();
-const multerUpload = require('../middleware/multerUpload'); // Ensure this path is correct
-const uploads = require('../middleware/uploads'); // Ensure this path is correct
+const { upload, uploadToImageKit, deleteImage } = require('../middleware/uploadMiddleware');
 const { createProject, updateProject, getAllProjects, getProjectById, deleteProject } = require('../controllers/project.controller');
 const { authenticateToken } = require('../middleware/authenticateToken');
-const projectController = require('../controllers/project.controller');
 
-// GET semua proyek
-route.get("/", projectController.getAllProjects);
+// GET all projects
+route.get("/", getAllProjects);
 
-// GET proyek berdasarkan ID
-route.get("/:id", projectController.getProjectById);
+// GET project by ID
+route.get("/:id", getProjectById);
 
-// POST untuk membuat proyek baru (memerlukan autentikasi dan upload)
-route.post("/", authenticateToken, multerUpload.single('image'), uploads.upload, projectController.createProject);
+// POST to create a new project (requires authentication and file upload)
+route.post("/", authenticateToken, upload.single('image'), uploadToImageKit, createProject);
 
-// PUT untuk memperbarui proyek yang ada (memerlukan autentikasi dan upload)
-route.put("/:id", authenticateToken, multerUpload.single('image'), uploads.upload, projectController.updateProject);
+// PUT to update an existing project (requires authentication and file upload)
+route.put("/:id", authenticateToken, upload.single('image'), uploadToImageKit, updateProject);
 
-// DELETE untuk menghapus proyek berdasarkan ID (memerlukan autentikasi)
-route.delete("/:id", authenticateToken, projectController.deleteProject);
+// DELETE to remove a project by ID (requires authentication)
+route.delete("/:id", authenticateToken, deleteProject);
 
 module.exports = route;
