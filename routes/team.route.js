@@ -1,7 +1,7 @@
 // routes/project.route.js
 const express = require('express');
 const route = express.Router();
-const { upload, uploadToImageKit, deleteImage } = require('../middleware/uploadMiddleware');
+const { upload, uploadToImageKit, deleteImage } = require('../middleware/uploads');
 const { createProject, updateProject, getAllProjects, getProjectById, deleteProject } = require('../controllers/project.controller');
 const { authenticateToken } = require('../middleware/authenticateToken');
 
