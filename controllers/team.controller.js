@@ -1,21 +1,12 @@
 const { Team } = require('../models');
-const path = require('path');
-const fs = require('fs');
-
-// Utility function to delete image
-const deleteImage = (imageName) => {
-  const imagePath = path.join(__dirname, '../uploads', imageName);
-  if (fs.existsSync(imagePath)) {
-    fs.unlinkSync(imagePath);
-  }
-};
+const { deleteImage } = require('../middleware/uploads'); // Import deleteImage function
 
 module.exports = {
   // Create a new team member
   createTeamMember: async (req, res) => {
     try {
       const { name, position, linkedin, link_instagram, link_github } = req.body;
-      const image = req.file ? req.file.filename : null;
+      const imageUrl = req.imageUrl || null; // Use image URL from middleware
 
       const newTeamMember = await Team.create({ 
         name, 
@@ -23,9 +14,9 @@ module.exports = {
         linkedin, 
         link_instagram, 
         link_github, 
-        image 
+        image: imageUrl 
       });
-      
+
       res.status(201).json({
         message: "Team member created successfully",
         data: newTeamMember
@@ -43,7 +34,7 @@ module.exports = {
     try {
       const { id } = req.params;
       const { name, position, linkedin, link_instagram, link_github } = req.body;
-      const newImage = req.file ? req.file.filename : null;
+      const newImageUrl = req.imageUrl || null; // Use new image URL from middleware
 
       const teamMember = await Team.findByPk(id);
       if (!teamMember) {
@@ -52,9 +43,10 @@ module.exports = {
         });
       }
 
-      if (newImage) {
-        // Delete old image
-        deleteImage(teamMember.image);
+      if (newImageUrl) {
+        // Delete old image from ImageKit
+        const oldImageId = path.basename(teamMember.image, path.extname(teamMember.image));
+        await deleteImage(oldImageId);
       }
 
       await teamMember.update({ 
@@ -63,7 +55,7 @@ module.exports = {
         linkedin, 
         link_instagram, 
         link_github, 
-        image: newImage || teamMember.image 
+        image: newImageUrl || teamMember.image 
       });
 
       res.json({
@@ -127,8 +119,11 @@ module.exports = {
         });
       }
 
-      // Delete image
-      deleteImage(teamMember.image);
+      // Delete image from ImageKit
+      if (teamMember.image) {
+        const imageId = path.basename(teamMember.image, path.extname(teamMember.image));
+        await deleteImage(imageId);
+      }
 
       await teamMember.destroy();
       res.json({
