@@ -1,24 +1,23 @@
+// routes/project.route.js
 const express = require('express');
 const route = express.Router();
-const { createTeamMember, getTeamMemberById, updateTeamMember, deleteTeamMember,getAllTeamMembers } = require('../controllers/team.controller');
+const { upload, uploadToImageKit, deleteImage } = require('../middleware/uploadMiddleware');
+const { createProject, updateProject, getAllProjects, getProjectById, deleteProject } = require('../controllers/project.controller');
 const { authenticateToken } = require('../middleware/authenticateToken');
-const upload = require('../middleware/uploads'); // Middleware for handling file uploads
-const multerUpload = require('../middleware/multerUpload'); // Ensure this path is correct
-const teamController = require('../controllers/team.controller');
 
 // GET all projects
-route.get("/", teamController.getAllTeamMembers);
+route.get("/", getAllProjects);
 
-// GET a single project by ID
-route.get("/:id", teamController.getTeamMemberById);
+// GET project by ID
+route.get("/:id", getProjectById);
 
-// POST request to create a new project (authentication required)
-route.post("/", authenticateToken, multerUpload.single('image'), teamController.createTeamMember);
+// POST to create a new project (requires authentication and file upload)
+route.post("/", authenticateToken, upload.single('image'), uploadToImageKit, createProject);
 
-// PUT request to update an existing project (authentication required)
-route.put("/:id", authenticateToken, multerUpload.single('image'), teamController.updateTeamMember);
+// PUT to update an existing project (requires authentication and file upload)
+route.put("/:id", authenticateToken, upload.single('image'), uploadToImageKit, updateProject);
 
-// DELETE request to delete a project by ID (authentication required)
-route.delete("/:id", authenticateToken, teamController.deleteTeamMember);
+// DELETE to remove a project by ID (requires authentication)
+route.delete("/:id", authenticateToken, deleteProject);
 
 module.exports = route;
