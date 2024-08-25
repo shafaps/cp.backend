@@ -1,22 +1,22 @@
 const express = require('express');
 const route = express.Router();
-const { createTeamMember, getTeamMemberById, updateTeamMember, deleteTeamMember,getAllTeamMembers } = require('../controllers/team.controller');
+const { createTeamMember, getTeamMemberById, updateTeamMember, deleteTeamMember, getAllTeamMembers } = require('../controllers/team.controller');
 const { authenticateToken } = require('../middleware/authenticateToken');
-const upload = require('../middleware/uploads'); // Middleware for handling file uploads
+const { upload } = require('../middleware/uploads'); // Import upload middleware
 
-// GET all projects
+// GET all team members
 route.get("/", getAllTeamMembers);
 
-// GET a single project by ID
+// GET a single team member by ID
 route.get("/:id", getTeamMemberById);
 
-// POST request to create a new project (authentication required)
-route.post("/", authenticateToken, upload.single('image'), createTeamMember);
+// POST request to create a new team member (authentication required)
+route.post("/", authenticateToken, upload, createTeamMember); // Apply upload middleware here
 
-// PUT request to update an existing project (authentication required)
-route.put("/:id", authenticateToken, upload.single('image'), updateTeamMember);
+// PUT request to update an existing team member (authentication required)
+route.put("/:id", authenticateToken, upload, updateTeamMember); // Apply upload middleware here
 
-// DELETE request to delete a project by ID (authentication required)
+// DELETE request to delete a team member by ID (authentication required)
 route.delete("/:id", authenticateToken, deleteTeamMember);
 
 module.exports = route;
