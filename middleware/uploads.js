@@ -1,35 +1,54 @@
-const formidable = require('formidable');
-const imagekit = require('../utils/imagekit'); // Ensure you have an ImageKit utility file for the configuration
+const ImageKit = require('imagekit');
+const fs = require('fs');
+const path = require('path');
 
-const upload = (req, res, next) => {
-  const form = new formidable.IncomingForm();
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error parsing form data' });
-    }
+// Initialize ImageKit
+const imageKit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
+});
 
-    req.body = fields;
-    req.file = files.image ? files.image[0] : null; // Adjust if your field name is different
+// Middleware for handling file uploads
+const upload = async (req, res, next) => {
+  if (!req.file) {
+    return next();
+  }
 
-    if (req.file) {
-      try {
-        const uploadResponse = await imagekit.upload({
-          file: req.file.filepath, // Path to the temporary file
-          fileName: req.file.originalFilename
-        });
+  try {
+    // Upload file to ImageKit
+    const filePath = req.file.path;
+    const result = await imageKit.upload({
+      file: fs.readFileSync(filePath),
+      fileName: req.file.originalname
+    });
 
-        req.fileUrl = uploadResponse.url; // URL from ImageKit
-        next();
-      } catch (uploadError) {
-        res.status(500).json({
-          message: 'Error uploading image',
-          error: uploadError.message
-        });
-      }
-    } else {
-      next(); // No file to upload, continue
-    }
-  });
+    // Add the uploaded image URL to request object
+    req.imageUrl = result.url;
+
+    // Clean up local file after upload
+    fs.unlinkSync(filePath);
+
+    next();
+  } catch (error) {
+    console.error('Error uploading file to ImageKit:', error);
+    res.status(500).json({
+      message: 'Error uploading file',
+      error: error.message
+    });
+  }
 };
 
-module.exports = upload;
+// Middleware for deleting image from ImageKit
+const deleteImage = async (fileId) => {
+  try {
+    await imageKit.deleteFile(fileId);
+  } catch (error) {
+    console.error('Error deleting image from ImageKit:', error);
+  }
+};
+
+module.exports = {
+  upload,
+  deleteImage
+};
