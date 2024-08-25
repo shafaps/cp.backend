@@ -10,8 +10,9 @@ const upload = multer({ dest: 'uploads/' }); // Gunakan sesuai kebutuhan
 
 // Gunakan middleware CORS dengan konfigurasi
 app.use(cors({
+  origin: 'http://localhost:5173', // Allow requests from this origin
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Sajikan file statis dari folder "uploads"
