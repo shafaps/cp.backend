@@ -1,17 +1,35 @@
-// middlewares/upload.js
-const multer = require('multer');
-const path = require('path');
+const formidable = require('formidable');
+const imagekit = require('../utils/imagekit'); // Ensure you have an ImageKit utility file for the configuration
 
-// Konfigurasi penyimpanan file
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Menyimpan file di folder 'uploads'
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)); // Menambahkan timestamp ke nama file
+const upload = (req, res, next) => {
+  const form = new formidable.IncomingForm();
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      return res.status(500).json({ message: 'Error parsing form data' });
     }
-});
 
-const upload = multer({ storage });
+    req.body = fields;
+    req.file = files.image ? files.image[0] : null; // Adjust if your field name is different
+
+    if (req.file) {
+      try {
+        const uploadResponse = await imagekit.upload({
+          file: req.file.filepath, // Path to the temporary file
+          fileName: req.file.originalFilename
+        });
+
+        req.fileUrl = uploadResponse.url; // URL from ImageKit
+        next();
+      } catch (uploadError) {
+        res.status(500).json({
+          message: 'Error uploading image',
+          error: uploadError.message
+        });
+      }
+    } else {
+      next(); // No file to upload, continue
+    }
+  });
+};
 
 module.exports = upload;
